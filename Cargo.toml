@@ -1,0 +1,7 @@
+[package]
+name = "servo-connection-test"
+version = "0.1.0"
+authors = ["Diane Hosfelt <dhosfelt@mozilla.com>"]
+
+[dependencies]
+hyper = "0.9"
