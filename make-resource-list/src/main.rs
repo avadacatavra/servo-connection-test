@@ -19,7 +19,7 @@ use html5ever::rcdom::{Document, Doctype, Text, Comment, Element, RcDom, Handle}
 //from https://github.com/servo/html5ever/blob/master/examples/print-rcdom.rs
 //TODO missing lifetime specifier on Vec &str
 fn walk(indent: usize, handle: Handle) -> Vec<String> {
-    let mut resource_list = Vec::new();
+    let mut resource_list = vec!();
 
     let node = handle.borrow();
     // FIXME: don't allocate
@@ -40,7 +40,8 @@ fn walk(indent: usize, handle: Handle) -> Vec<String> {
                 //print!(" {}=\"{}\"", attr.name.local, attr.value);
                 if attr.name.local.eq_ignore_ascii_case(&atom!("src")) || 
                    attr.name.local.eq_ignore_ascii_case(&atom!("href")) {
-                    resource_list.push(replace(&mut attr.value.to_string(), String::new()))
+                    //resource_list.push(replace(&mut attr.value.to_string(), String::new()));
+                    resource_list.push(attr.value.to_string());
                 }
             }
         }
