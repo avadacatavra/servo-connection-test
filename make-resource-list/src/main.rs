@@ -17,9 +17,7 @@ use html5ever::parse_document;
 use html5ever::rcdom::{Document, Doctype, Text, Comment, Element, RcDom, Handle};
 
 //from https://github.com/servo/html5ever/blob/master/examples/print-rcdom.rs
-//TODO missing lifetime specifier on Vec &str
-fn walk(indent: usize, handle: Handle) -> Vec<String> {
-    let mut resource_list = vec!();
+fn walk(indent: usize, handle: Handle, mut resource_list : &mut Vec<String>)  {
 
     let node = handle.borrow();
     // FIXME: don't allocate
@@ -48,15 +46,10 @@ fn walk(indent: usize, handle: Handle) -> Vec<String> {
     }
 
     for child in node.children.iter() {
-        walk(indent+4, child.clone());
+        walk(indent+4, child.clone(), &mut resource_list);
     }
 
-    for i in resource_list.iter(){
-        println!("{}", i);
-    }
 
-    //TODO it's not returning?
-    resource_list
 }
 
 
@@ -80,9 +73,11 @@ fn main() {
     //println!("{}",buf)
     
     //So buf holds the html of the site. Now you need to parse through it and grab 
-
     let dom = parse_document(RcDom::default(), Default::default()).one(buf);
-    let resource_list = walk(0, dom.document);
+
+    let mut resource_list = vec!();
+
+    walk(0, dom.document, &mut resource_list);
    
     println!("{}", resource_list.len());
     for i in resource_list.iter(){
