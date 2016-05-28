@@ -7,22 +7,23 @@ use std::io::BufWriter;
 use std::path::Path;
 use hyper::{Client};
 
+//TODO create ./out if dne
+//
+fn get_filename_from_url(url : &str) -> String {
+    url.replace("/", "_")
+}
 
-//http://zsiciarz.github.io/24daysofrust/book/day5.html
-fn main() {
-
-    let client = Client::new();
-    let url = "http://i.imgur.com/PwEwUhA.jpg";
-    //let url = "http://zsiciarz.github.io/24daysofrust/book/day5.html";
-    
-
+//fetch resource and write to file
+fn fetch_resource(url : &str, client : &Client){
     let mut response = match client.get(url).send() {
         Ok(response) => response,
         Err(_) => panic!("Error"),
     };
 
-
-    let path = Path::new("out/test.out");
+    //filename == replace all / with _
+   
+    let filename = get_filename_from_url(&url);
+    let path = Path::new(&filename);
     let display = path.display();
     let file = match File::create(&path) {
         Err(why) => panic!("couldn't create {}: {}", 
@@ -42,6 +43,20 @@ fn main() {
         Err(why) => panic!("couldn't read response: {}", why.description())
     }
 
+
+}
+
+
+//http://zsiciarz.github.io/24daysofrust/book/day5.html
+fn main() {
+
+    let client = Client::new();
+    let url = "http://i.imgur.com/PwEwUhA.jpg";
+    //let url = "http://zsiciarz.github.io/24daysofrust/book/day5.html";
+    
+    fetch_resource(&url, &client);
+
+    //TODO loop through resources.txt and grab all resources
 
 
 }
