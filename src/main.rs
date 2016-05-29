@@ -111,17 +111,24 @@ fn make_resource_list(url : &str, client : &Client) {
     walk(0, dom.document, &mut resource_list);
    
   
-    let mut writer = match File::create("../resources.txt") {
+    let mut writer = match File::create("resources.txt") {
         Err(why) => panic!("Can't create resources.txt: {}", why.description()),
         Ok(writer) => writer,
     };
 
     for r in resource_list.iter(){
-        write!(writer, "{}\n", r).expect("IO Error");
+        write!(writer, "{}{}\n", url, r).expect("IO Error");
     }
 
 }
 
+fn exists(path : &Path) -> bool {
+    let b = match std::fs::metadata(path){
+        Ok(_) => true,
+        Err(_) => false,
+    };
+    return b;
+}
 
 
 //http://zsiciarz.github.io/24daysofrust/book/day5.html
@@ -137,8 +144,13 @@ fn main() {
 
     //open resources.txt and iterate through lines
     let path = Path::new("resources.txt");
+
+    if !exists(&path) {
+        make_resource_list(&url, &client);
+    }
+
     let file = match File::open(&path) {
-        Err(_) => panic!("sigh"), //TODO on error, should form file
+        Err(_) => panic!("sigh"), 
         Ok(file) => file,
     };
     let resources = BufReader::new(file);
