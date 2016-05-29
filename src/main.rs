@@ -4,6 +4,7 @@ use std::fs::File;
 use std::error::Error;
 use std::io::prelude::*;
 use std::io::BufWriter;
+use std::io::BufReader;
 use std::path::Path;
 use hyper::{Client};
 
@@ -12,6 +13,7 @@ use hyper::{Client};
 fn get_filename_from_url(url : &str) -> String {
     url.replace("/", "_")
 }
+
 
 //fetch resource and write to file
 fn fetch_resource(url : &str, client : &Client){
@@ -46,17 +48,34 @@ fn fetch_resource(url : &str, client : &Client){
 
 }
 
+fn make_resource_list(url : &str) {
+
+
+}
+
+
 
 //http://zsiciarz.github.io/24daysofrust/book/day5.html
 fn main() {
 
     let client = Client::new();
-    let url = "http://i.imgur.com/PwEwUhA.jpg";
+    //let url = "http://i.imgur.com/PwEwUhA.jpg";
     //let url = "http://zsiciarz.github.io/24daysofrust/book/day5.html";
+    let url = "https://abbyputinski.com";
     
+
     fetch_resource(&url, &client);
 
-    //TODO loop through resources.txt and grab all resources
-
+    //open resources.txt and iterate through lines
+    let path = Path::new("resources.txt");
+    let file = match File::open(&path) {
+        Err(_) => panic!("sigh"), //TODO on error, should form file
+        Ok(file) => file,
+    };
+    let resources = BufReader::new(file);
+    
+    for line in resources.lines() {
+        println!("{}", line.unwrap());
+    }
 
 }
