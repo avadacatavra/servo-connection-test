@@ -29,7 +29,6 @@ fn fetch_resource(url : &str, client : &Client){
 
    
     let filename = format!("./out/{}",get_filename_from_url(&url));
-    println!("{}",filename);
     let path = Path::new(&filename);
     let file =  File::create(&path).unwrap();
     let mut writer = BufWriter::new(file);
@@ -45,8 +44,6 @@ fn fetch_resource(url : &str, client : &Client){
 fn walk(indent: usize, handle: Handle, mut resource_list : &mut Vec<String>)  {
 
     let node = handle.borrow();
-    // FIXME: don't allocate
-    // FIXME: do I really need all of those unused match compares?
     match node.node {
         Element(ref name, _, ref attrs) => {
             assert!(name.ns == ns!(html));
@@ -121,7 +118,6 @@ fn main() {
     
     for l in resources.lines() {
         let line = l.unwrap();
-        println!("{}", line);
         fetch_resource(&line, &client);
     }
 
