@@ -22,25 +22,23 @@ use std::string::String;
 use scoped_threadpool::Pool;
 use std::sync::Arc;
 
+//TODO switch to rust-url https://github.com/servo/rust-url
 
 fn get_filename_from_url(url : &str) -> String {
     url.replace("/", "_")
 }
 
 
-fn fetch_resource(url : &str, client : &Client){
+fn fetch_resource(url: &str, client: &Client){
     let mut response =  client.get(url)
         //.header(Connection::close())
         .send()
         .expect("Error getting url");
 
     write_resource(url, &mut response); 
-
-
 }
 
-fn write_resource(url : &str, response: &mut hyper::client::Response){
-
+fn write_resource(url: &str, response: &mut hyper::client::Response){ //FIXME
     let filename = format!("./out/{}",get_filename_from_url(&url));
     let path = Path::new(&filename);
     let file =  File::create(&path).unwrap();
@@ -50,11 +48,9 @@ fn write_resource(url : &str, response: &mut hyper::client::Response){
     if response.read_to_end(&mut buf).is_ok() {
         writer.write(buf.as_slice()).expect("IO Error");
     }
-
 }
 
-fn walk(indent: usize, handle: Handle, mut resource_list : &mut Vec<String>)  {
-
+fn walk(indent: usize, handle: Handle, mut resource_list: &mut Vec<String>)  {
     let node = handle.borrow();
     match node.node {
         Element(ref name, _, ref attrs) => {
@@ -73,11 +69,9 @@ fn walk(indent: usize, handle: Handle, mut resource_list : &mut Vec<String>)  {
     for child in node.children.iter() {
         walk(indent+4, child.clone(), &mut resource_list);
     }
-
-
 }
 
-fn make_resource_list(url : &str, client : &Client) {
+fn make_resource_list(url: &str, client: &Client) {
     let mut response = client.get(url).send().expect("Couldn't get response");
 
     let mut buf = String::new();
@@ -89,27 +83,29 @@ fn make_resource_list(url : &str, client : &Client) {
   
     let mut writer = File::create("resources.txt").unwrap();
   
-    for r in resource_list.iter(){
+    for r in resource_list{
         if !r.starts_with("http") {
             write!(writer, "{}{}\n", url, r).expect("IO Error");
         } else {
             write!(writer, "{}\n", url).expect("IO Error");
         }
     }
-
 }
 
 
 //goal: model resource fetching to examine hyper connection behavior
 fn main() {
-
     let client = Arc::new(Client::new());
 
     let url = "https://abbyputinski.com";
     //let url = "https://twitter.com";
 
-    let output_dir = fs::metadata("./out");
-    if output_dir.is_err() || !output_dir.unwrap().is_dir(){
+    /*let output_dir = fs::metadata("./out");
+    if output_dir.is_err() || !output_dir.unwrap().is_dir(){    //FIXME
+        fs::create_dir("./out").expect("Couldn't create ./out");
+    }*/
+
+    if !Path::new("./out").is_dir() {
         fs::create_dir("./out").expect("Couldn't create ./out");
     }
 
@@ -148,5 +144,8 @@ fn main() {
         fetch_resource(&line, &client);
     }
     */
-
 }
+
+//TODO https://github.com/kbknapp/clap-rs for cmd line
+////TODO make make_resources into srs/bin/make_resources.rs
+//// <jack> note once there are multiple binaries, you have to use --bin to cargo run to pick which one you want

@@ -8,3 +8,6 @@ hyper = "0.9"
 html5ever = "*"
 string_cache = "*"
 scoped_threadpool = "*"
+
+[dependencies.url]
+git = "https://github.com/servo/rust-url"
