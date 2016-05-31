@@ -2,8 +2,8 @@ extern crate hyper;
 extern crate html5ever;
 #[macro_use] extern crate string_cache;
 
+use std::fs;
 use std::fs::File;
-use std::error::Error;
 use std::io::prelude::*;
 use std::io::BufWriter;
 use std::io::BufReader;
@@ -26,12 +26,12 @@ fn get_filename_from_url(url : &str) -> String {
 
 
 //fetch resource and write to file
-//TODO remove duplication
 fn fetch_resource(url : &str, client : &Client){
     let mut response =  client.get(url).send().expect("Error getting url");
 
    
-    let filename = get_filename_from_url(&url);
+    let filename = format!("./out/{}",get_filename_from_url(&url));
+    println!("{}",filename);
     let path = Path::new(&filename);
     let file =  File::create(&path).unwrap();
     let mut writer = BufWriter::new(file);
@@ -77,7 +77,7 @@ fn walk(indent: usize, handle: Handle, mut resource_list : &mut Vec<String>)  {
 
 }
 
-
+//FIXME duplication with fetch_resource
 fn make_resource_list(url : &str, client : &Client) {
     let mut response = client.get(url).send().expect("Couldn't get response");
 
@@ -91,7 +91,11 @@ fn make_resource_list(url : &str, client : &Client) {
     let mut writer = File::create("resources.txt").unwrap();
   
     for r in resource_list.iter(){
-        write!(writer, "{}{}\n", url, r).expect("IO Error");
+        if !r.starts_with("http") {
+            write!(writer, "{}{}\n", url, r).expect("IO Error");
+        } else {
+            write!(writer, "{}\n", url).expect("IO Error");
+        }
     }
 
 }
@@ -105,9 +109,12 @@ fn main() {
     //let url = "http://i.imgur.com/PwEwUhA.jpg";
     //let url = "http://zsiciarz.github.io/24daysofrust/book/day5.html";
     let url = "https://abbyputinski.com";
-    
+   
+    let output_dir = fs::metadata("./out");
+    if output_dir.is_err() || !output_dir.unwrap().is_dir(){
+        fs::create_dir("./out").expect("Couldn't create ./out");
+    }
 
-    fetch_resource(&url, &client);
 
     //open resources.txt and iterate through lines
     let path = Path::new("resources.txt");
@@ -117,14 +124,18 @@ fn main() {
         make_resource_list(&url, &client);
     }
 
+
+
     
     let file = File::open(&path).unwrap();
 
 
     let resources = BufReader::new(file);
     
-    for line in resources.lines() {
-        println!("{}", line.unwrap());
+    for l in resources.lines() {
+        let line = l.unwrap();
+        println!("{}", line);
+        fetch_resource(&line, &client);
     }
 
 }
