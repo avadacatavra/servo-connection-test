@@ -101,7 +101,6 @@ fn make_resource_list(url : &str, client : &Client) {
 
 
 
-//http://zsiciarz.github.io/24daysofrust/book/day5.html
 fn main() {
 
     let client = Arc::new(Client::new());
@@ -129,8 +128,8 @@ fn main() {
  
 
     /*
-     *  There's now an async hyper if i can figure out how to use it
-     *  This code currently creates a new client for each and (sometimes) closes it--see fetch_resource--not a good use!
+     *  TODO not sure if this is the best way 
+     *  http://seanmonstar.com/post/141495445652/async-hyper
      */
     let mut pool = Pool::new(8);
     pool.scoped(|scope| {
@@ -143,7 +142,6 @@ fn main() {
         }
     });
 
-    //TODO parallelize
     /*for l in resources.lines() {
 
         let line = l.unwrap();
