@@ -100,7 +100,7 @@ fn make_resource_list(url : &str, client : &Client) {
 }
 
 
-
+//goal: model resource fetching to examine hyper connection behavior
 fn main() {
 
     let client = Arc::new(Client::new());
