@@ -26,33 +26,19 @@ fn get_filename_from_url(url : &str) -> String {
 
 
 //fetch resource and write to file
+//TODO remove duplication
 fn fetch_resource(url : &str, client : &Client){
-    let mut response = match client.get(url).send() {
-        Ok(response) => response,
-        Err(_) => panic!("Error"),
-    };
+    let mut response =  client.get(url).send().expect("Error getting url");
 
-    //filename == replace all / with _
    
     let filename = get_filename_from_url(&url);
     let path = Path::new(&filename);
-    let display = path.display();
-    let file = match File::create(&path) {
-        Err(why) => panic!("couldn't create {}: {}", 
-                           display, why.description()),
-        Ok(file) => file,
-    };
+    let file =  File::create(&path).unwrap();
     let mut writer = BufWriter::new(file);
 
-    //let mut buf = String::new();
     let mut buf = Vec::new();
-    match response.read_to_end(&mut buf){
-        Ok(_) => match writer.write(buf.as_slice()) {
-            Err(why) => panic!("couldn't write to {}: {}", 
-                               display, why.description()),
-            Ok(_) => println!("successfully wrote to {}", display)
-        },
-        Err(why) => panic!("couldn't read response: {}", why.description())
+    if response.read_to_end(&mut buf).is_ok() {
+        writer.write(buf.as_slice()).expect("IO Error");
     }
 
 
@@ -76,10 +62,8 @@ fn walk(indent: usize, handle: Handle, mut resource_list : &mut Vec<String>)  {
             assert!(name.ns == ns!(html));
             for attr in attrs.iter() {
                 assert!(attr.name.ns == ns!());
-                //print!(" {}=\"{}\"", attr.name.local, attr.value);
                 if attr.name.local.eq_ignore_ascii_case(&atom!("src")) || 
                    attr.name.local.eq_ignore_ascii_case(&atom!("href")) {
-                    //resource_list.push(replace(&mut attr.value.to_string(), String::new()));
                     resource_list.push(attr.value.to_string());
                 }
             }
@@ -95,40 +79,23 @@ fn walk(indent: usize, handle: Handle, mut resource_list : &mut Vec<String>)  {
 
 
 fn make_resource_list(url : &str, client : &Client) {
-    let mut response = match client.get(url).send(){
-        Err(why) => panic!("Couldn't get response: {}", why.description()),
-        Ok(response) => response,
-    };
+    let mut response = client.get(url).send().expect("Couldn't get response");
 
     let mut buf = String::new();
-    match response.read_to_string(&mut buf) {
-        Err(why) => panic!("Couldn't read response: {}", why.description()),
-        Ok(_) => (),
-    };
+    response.read_to_string(&mut buf).expect("Error reading response");
 
     let dom = parse_document(RcDom::default(), Default::default()).one(buf);
     let mut resource_list = vec!();
     walk(0, dom.document, &mut resource_list);
-   
   
-    let mut writer = match File::create("resources.txt") {
-        Err(why) => panic!("Can't create resources.txt: {}", why.description()),
-        Ok(writer) => writer,
-    };
-
+    let mut writer = File::create("resources.txt").unwrap();
+  
     for r in resource_list.iter(){
         write!(writer, "{}{}\n", url, r).expect("IO Error");
     }
 
 }
 
-fn exists(path : &Path) -> bool {
-    let b = match std::fs::metadata(path){
-        Ok(_) => true,
-        Err(_) => false,
-    };
-    return b;
-}
 
 
 //http://zsiciarz.github.io/24daysofrust/book/day5.html
@@ -145,14 +112,15 @@ fn main() {
     //open resources.txt and iterate through lines
     let path = Path::new("resources.txt");
 
-    if !exists(&path) {
+    let exists = std::fs::metadata(path);
+    if exists.is_err() {
         make_resource_list(&url, &client);
     }
 
-    let file = match File::open(&path) {
-        Err(_) => panic!("sigh"), 
-        Ok(file) => file,
-    };
+    
+    let file = File::open(&path).unwrap();
+
+
     let resources = BufReader::new(file);
     
     for line in resources.lines() {
