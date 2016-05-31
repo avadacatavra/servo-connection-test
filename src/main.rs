@@ -12,14 +12,12 @@ use std::path::Path;
 use hyper::{Client};
 use html5ever::tendril::TendrilSink;
 use html5ever::parse_document;
-use html5ever::rcdom::{Document, Doctype, Text, Comment, Element, RcDom, Handle};
+use html5ever::rcdom::{Element, RcDom, Handle};
 
 use std::default::Default;
 use std::string::String;
 
 
-//TODO create ./out if dne
-//
 fn get_filename_from_url(url : &str) -> String {
     url.replace("/", "_")
 }
@@ -50,14 +48,6 @@ fn walk(indent: usize, handle: Handle, mut resource_list : &mut Vec<String>)  {
     // FIXME: don't allocate
     // FIXME: do I really need all of those unused match compares?
     match node.node {
-        Document => (),
-
-        Doctype(_,_,_) => (),
-
-        Text(_) => (),
-
-        Comment(_) => (),
-
         Element(ref name, _, ref attrs) => {
             assert!(name.ns == ns!(html));
             for attr in attrs.iter() {
@@ -68,6 +58,7 @@ fn walk(indent: usize, handle: Handle, mut resource_list : &mut Vec<String>)  {
                 }
             }
         }
+        _ => (),
     }
 
     for child in node.children.iter() {
@@ -106,8 +97,6 @@ fn make_resource_list(url : &str, client : &Client) {
 fn main() {
 
     let client = Client::new();
-    //let url = "http://i.imgur.com/PwEwUhA.jpg";
-    //let url = "http://zsiciarz.github.io/24daysofrust/book/day5.html";
     let url = "https://abbyputinski.com";
    
     let output_dir = fs::metadata("./out");
@@ -123,8 +112,6 @@ fn main() {
     if exists.is_err() {
         make_resource_list(&url, &client);
     }
-
-
 
     
     let file = File::open(&path).unwrap();
