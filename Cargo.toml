@@ -7,3 +7,4 @@ authors = ["Diane Hosfelt <dhosfelt@mozilla.com>"]
 hyper = "0.9"
 html5ever = "*"
 string_cache = "*"
+scoped_threadpool = "*"

@@ -1,5 +1,6 @@
 extern crate hyper;
 extern crate html5ever;
+extern crate scoped_threadpool;
 #[macro_use] extern crate string_cache;
 
 use std::fs;
@@ -9,7 +10,8 @@ use std::io::BufWriter;
 use std::io::BufReader;
 use std::path::Path;
 
-use hyper::{Client};
+use hyper::Client;
+use hyper::header::Connection;
 use html5ever::tendril::TendrilSink;
 use html5ever::parse_document;
 use html5ever::rcdom::{Element, RcDom, Handle};
@@ -17,17 +19,28 @@ use html5ever::rcdom::{Element, RcDom, Handle};
 use std::default::Default;
 use std::string::String;
 
+use scoped_threadpool::Pool;
+use std::sync::Arc;
+
 
 fn get_filename_from_url(url : &str) -> String {
     url.replace("/", "_")
 }
 
 
-//fetch resource and write to file
 fn fetch_resource(url : &str, client : &Client){
-    let mut response =  client.get(url).send().expect("Error getting url");
+    let mut response =  client.get(url)
+        //.header(Connection::close())
+        .send()
+        .expect("Error getting url");
 
-   
+    write_resource(url, &mut response); 
+
+
+}
+
+fn write_resource(url : &str, response: &mut hyper::client::Response){
+
     let filename = format!("./out/{}",get_filename_from_url(&url));
     let path = Path::new(&filename);
     let file =  File::create(&path).unwrap();
@@ -37,7 +50,6 @@ fn fetch_resource(url : &str, client : &Client){
     if response.read_to_end(&mut buf).is_ok() {
         writer.write(buf.as_slice()).expect("IO Error");
     }
-
 
 }
 
@@ -65,7 +77,6 @@ fn walk(indent: usize, handle: Handle, mut resource_list : &mut Vec<String>)  {
 
 }
 
-//FIXME duplication with fetch_resource
 fn make_resource_list(url : &str, client : &Client) {
     let mut response = client.get(url).send().expect("Couldn't get response");
 
@@ -93,9 +104,11 @@ fn make_resource_list(url : &str, client : &Client) {
 //http://zsiciarz.github.io/24daysofrust/book/day5.html
 fn main() {
 
-    let client = Client::new();
+    let client = Arc::new(Client::new());
+
     let url = "https://abbyputinski.com";
-   
+    //let url = "https://twitter.com";
+
     let output_dir = fs::metadata("./out");
     if output_dir.is_err() || !output_dir.unwrap().is_dir(){
         fs::create_dir("./out").expect("Couldn't create ./out");
@@ -112,13 +125,30 @@ fn main() {
 
     
     let file = File::open(&path).unwrap();
-
-
     let resources = BufReader::new(file);
-    
-    for l in resources.lines() {
+ 
+
+    /*
+     *  There's now an async hyper if i can figure out how to use it
+     *  This code currently creates a new client for each and (sometimes) closes it--see fetch_resource--not a good use!
+     */
+    let mut pool = Pool::new(8);
+    pool.scoped(|scope| {
+        for l in resources.lines() {
+            let c = client.clone();
+            scope.execute(move || {
+                let line = l.unwrap();
+                fetch_resource(&line, &c);
+            });
+        }
+    });
+
+    //TODO parallelize
+    /*for l in resources.lines() {
+
         let line = l.unwrap();
         fetch_resource(&line, &client);
     }
+    */
 
 }
