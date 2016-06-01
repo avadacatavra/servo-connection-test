@@ -19,6 +19,7 @@ use html5ever::rcdom::{Element, RcDom, Handle};
 
 use std::default::Default;
 use std::string::String;
+use std::error::Error;
 
 use scoped_threadpool::Pool;
 use std::sync::Arc;
@@ -31,12 +32,18 @@ fn get_filename_from_url(url : &str) -> String {
 
 
 fn fetch_resource(url: &str, client: &Client){
-    let mut response =  client.get(url)
+    let response =  match  client.get(url)
         //.header(Connection::close())
         .send()
-        .expect("Error getting url");
+     {
+            Ok(mut response) => write_resource(url, &mut response),
+            Err(why) => write_err(url, why),
+    };
 
-    write_resource(url, &mut response); 
+}
+
+fn write_err(url: &str, error: hyper::Error) {
+    println!("Error with {}: {}", url, error)
 }
 
 fn write_resource(url: &str, response: &mut client::Response){ 
@@ -67,7 +74,7 @@ fn main() {
                                 .help("number of threads in connection pool")
                                 .takes_value(true))
                             .get_matches();
-    let threads = matches.value_of("threads").unwrap_or("8").parse::<u32>().unwrap();
+    let threads = matches.value_of("threads").unwrap_or("8").parse::<u32>().unwrap(); //TODO is this the best way?
 
     if !Path::new("./out").is_dir() {
         fs::create_dir("./out").expect("Couldn't create ./out");

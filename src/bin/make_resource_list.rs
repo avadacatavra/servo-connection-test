@@ -23,9 +23,9 @@ fn walk(indent: usize, handle: Handle, mut resource_list: &mut Vec<String>)  {
     let node = handle.borrow();
     match node.node {
         Element(ref name, _, ref attrs) => {
-            assert!(name.ns == ns!(html));
+            //assert!(name.ns == ns!(html));
             for attr in attrs.iter() {
-                assert!(attr.name.ns == ns!());
+                //assert!(attr.name.ns == ns!());
                 if attr.name.local.eq_ignore_ascii_case(&atom!("src")) || 
                    attr.name.local.eq_ignore_ascii_case(&atom!("href")) {
                     resource_list.push(attr.value.to_string());
