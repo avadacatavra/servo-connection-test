@@ -11,7 +11,7 @@ use std::io::BufWriter;
 use std::io::BufReader;
 use std::path::Path;
 
-use hyper::Client;
+use hyper::{Client, client};
 use hyper::header::Connection;
 use html5ever::tendril::TendrilSink;
 use html5ever::parse_document;
@@ -39,7 +39,7 @@ fn fetch_resource(url: &str, client: &Client){
     write_resource(url, &mut response); 
 }
 
-fn write_resource(url: &str, response: &mut hyper::client::Response){ //FIXME
+fn write_resource(url: &str, response: &mut client::Response){ 
     let filename = format!("./out/{}",get_filename_from_url(&url));
     let path = Path::new(&filename);
     let file =  File::create(&path).unwrap();
