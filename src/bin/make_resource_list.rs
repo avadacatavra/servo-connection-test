@@ -64,11 +64,6 @@ fn make_resource_list(url: &str, client: &Client) {
         } else{
             write!(writer, "{}\n", resource_url).unwrap();  //FIXME duplicative
         }
-        /*if !r.starts_with("http") {
-            write!(writer, "{}{}\n", url, r).expect("IO Error");
-        } else {
-            write!(writer, "{}\n", url).expect("IO Error");
-        }*/
     }
 }
 
@@ -89,7 +84,6 @@ fn main() {
     let url = matches.value_of("URL").unwrap_or("https://abbyputinski.com");
 
     let client = Client::new();
-    //let url = "https://abbyputinski.com";
 
     make_resource_list(&url, &client);
 }
