@@ -1,5 +1,7 @@
 extern crate hyper;
 extern crate html5ever;
+extern crate clap;
+extern crate url;
 #[macro_use] extern crate string_cache;
 
 use std::fs::File;
@@ -9,9 +11,12 @@ use hyper::Client;
 use html5ever::tendril::TendrilSink;
 use html5ever::parse_document;
 use html5ever::rcdom::{Element, RcDom, Handle};
+use url::{Url, ParseError};
 
 use std::default::Default;
 use std::string::String;
+
+use clap::{Arg,App};
 
 
 fn walk(indent: usize, handle: Handle, mut resource_list: &mut Vec<String>)  {
@@ -36,6 +41,9 @@ fn walk(indent: usize, handle: Handle, mut resource_list: &mut Vec<String>)  {
 }
 
 fn make_resource_list(url: &str, client: &Client) {
+    let base_url = Url::parse(url).unwrap();
+    assert!(!base_url.cannot_be_a_base());
+
     let mut response = client.get(url).send().expect("Couldn't get response");
 
     let mut buf = String::new();
@@ -46,21 +54,43 @@ fn make_resource_list(url: &str, client: &Client) {
     walk(0, dom.document, &mut resource_list);
   
     let mut writer = File::create("resources.txt").unwrap();
-  
-    for r in resource_list{
-        if !r.starts_with("http") {
+    
+    write!(writer, "{}\n", url);
+    for resource_url in resource_list{
+        if Url::parse(&resource_url) == Err(ParseError::RelativeUrlWithoutBase) {
+            let resource_url = base_url.join(&resource_url).unwrap();
+            write!(writer, "{}\n", resource_url).unwrap();
+            
+        } else{
+            write!(writer, "{}\n", resource_url).unwrap();  //FIXME duplicative
+        }
+        /*if !r.starts_with("http") {
             write!(writer, "{}{}\n", url, r).expect("IO Error");
         } else {
             write!(writer, "{}\n", url).expect("IO Error");
-        }
+        }*/
     }
 }
 
+
+
 fn main() {
+    let matches = App::new("make-resource-list")
+                            .bin_name("make_resource_list")
+                            .version("1.0")
+                            .author("Diane Hosfelt dhosfelt@mozilla.com")
+                            .about("Makes a list of resources from a URL")
+                            .arg(Arg::with_name("URL")
+                                .short("u")
+                                .long("url")
+                                .help("the url to grab resources from")
+                                .takes_value(true))
+                            .get_matches();
+    let url = matches.value_of("URL").unwrap_or("https://abbyputinski.com");
+
     let client = Client::new();
-    let url = "https://abbyputinski.com";
+    //let url = "https://abbyputinski.com";
 
     make_resource_list(&url, &client);
 }
-
 
