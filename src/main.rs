@@ -2,6 +2,7 @@ extern crate hyper;
 extern crate html5ever;
 extern crate scoped_threadpool;
 extern crate clap;
+extern crate env_logger;
 #[macro_use] extern crate string_cache;
 
 use std::fs;
@@ -13,13 +14,8 @@ use std::path::Path;
 
 use hyper::{Client, client};
 use hyper::header::Connection;
-use html5ever::tendril::TendrilSink;
-use html5ever::parse_document;
-use html5ever::rcdom::{Element, RcDom, Handle};
 
-use std::default::Default;
 use std::string::String;
-use std::error::Error;
 
 use scoped_threadpool::Pool;
 use std::sync::Arc;
@@ -31,12 +27,13 @@ fn get_filename_from_url(url : &str) -> String {
 }
 
 
-fn fetch_resource(url: &str, client: &Client){
-    let response =  match  client.get(url)
-        //.header(Connection::close())
+fn fetch_resource(url: &str, client: &Client, io_flag: bool){
+    match  client.get(url)
+        .header(Connection::close())
         .send()
      {
-            Ok(mut response) => write_resource(url, &mut response),
+            Ok(mut response) => if io_flag{
+                write_resource(url, &mut response)},
             Err(why) => write_err(url, why),
     };
 
@@ -60,6 +57,7 @@ fn write_resource(url: &str, response: &mut client::Response){
 
 
 fn main() {
+    env_logger::init().unwrap();
     let client = Arc::new(Client::new());
 
     //TODO which way of making this is preferred? https://github.com/kbknapp/clap-rs
@@ -73,8 +71,13 @@ fn main() {
                                 .long("threads")
                                 .help("number of threads in connection pool")
                                 .takes_value(true))
+                            .arg(Arg::with_name("no_io")
+                                 .short("n")
+                                 .long("no_io")
+                                 .help("skips resource writing"))
                             .get_matches();
     let threads = matches.value_of("threads").unwrap_or("8").parse::<u32>().unwrap(); //TODO is this the best way?
+    let io_flag = matches.is_present("no_io");
 
     if !Path::new("./out").is_dir() {
         fs::create_dir("./out").expect("Couldn't create ./out");
@@ -98,6 +101,10 @@ fn main() {
     /*
      *  TODO not sure if this is the best way 
      *  http://seanmonstar.com/post/141495445652/async-hyper
+     *
+     *  hyper has it's own connection pooling--https://github.com/hyperium/hyper/blob/master/src/client/pool.rs
+     * http://hyper.rs/hyper/0.8.0/hyper/client/struct.Client.html#method.with_pool_config
+     *
      */
     let mut pool = Pool::new(threads);
     pool.scoped(|scope| {
@@ -105,7 +112,7 @@ fn main() {
             let c = client.clone();
             scope.execute(move || {
                 let line = l.unwrap();
-                fetch_resource(&line, &c);
+                fetch_resource(&line, &c, io_flag);
             });
         }
     });
