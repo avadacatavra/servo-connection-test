@@ -13,7 +13,7 @@ use std::io::BufReader;
 use std::path::Path;
 
 use hyper::{Client, client};
-use hyper::header::Connection;
+use hyper::header::{Headers, Connection};
 
 use std::string::String;
 
@@ -27,9 +27,16 @@ fn get_filename_from_url(url : &str) -> String {
 }
 
 
-fn fetch_resource(url: &str, client: &Client, io_flag: bool){
+fn fetch_resource(url: &str, client: &Client, io_flag: bool, conn_flag: bool){
+    let mut headers = Headers::new();
+    if conn_flag {
+        headers.set(Connection::close());
+    } else {
+        headers.set(Connection::keep_alive());
+    }
+    
     match  client.get(url)
-        .header(Connection::close())
+        .headers(headers)
         .send()
      {
             Ok(mut response) => if io_flag{
@@ -60,7 +67,6 @@ fn main() {
     env_logger::init().unwrap();
     let client = Arc::new(Client::new());
 
-    //TODO which way of making this is preferred? https://github.com/kbknapp/clap-rs
     let matches = App::new("servo-connection-test")
                             .bin_name("servo_connection_test")
                             .version("1.0")
@@ -75,9 +81,15 @@ fn main() {
                                  .short("n")
                                  .long("no_io")
                                  .help("skips resource writing"))
+                            .arg(Arg::with_name("close_connection")
+                                 .short("c")
+                                 .long("close_conn")
+                                 .help("Closes all connections instead of keeping them alive"))
                             .get_matches();
-    let threads = matches.value_of("threads").unwrap_or("8").parse::<u32>().unwrap(); //TODO is this the best way?
+    
+    let threads = matches.value_of("threads").unwrap_or("8").parse::<u32>().unwrap(); 
     let io_flag = !matches.is_present("no_io");
+    let conn_flag = matches.is_present("close_connection");
 
     if !Path::new("./out").is_dir() {
         fs::create_dir("./out").expect("Couldn't create ./out");
@@ -93,7 +105,6 @@ fn main() {
     let file = File::open(&path).unwrap();
     let mut resources = BufReader::new(file);
    
-    //TODO not sure if i actually need this
     let mut base_url = String::new();
     resources.read_line(&mut base_url).unwrap();
     println!("{}", base_url);
@@ -102,7 +113,7 @@ fn main() {
      *  TODO not sure if this is the best way 
      *  http://seanmonstar.com/post/141495445652/async-hyper
      *
-     *  hyper has it's own connection pooling--https://github.com/hyperium/hyper/blob/master/src/client/pool.rs
+     *  hyper has it's own connection pooling--https://github.com/hyperium/hyper/blob/master/src/client/pool.rs  -- on by default
      * http://hyper.rs/hyper/0.8.0/hyper/client/struct.Client.html#method.with_pool_config
      *
      */
@@ -112,10 +123,9 @@ fn main() {
             let c = client.clone();
             scope.execute(move || {
                 let line = l.unwrap();
-                fetch_resource(&line, &c, io_flag);
+                fetch_resource(&line, &c, io_flag, conn_flag);
             });
         }
     });
 }
 
-////TODO benchmarking https://doc.rust-lang.org/book/benchmark-tests.html
