@@ -77,7 +77,7 @@ fn main() {
                                  .help("skips resource writing"))
                             .get_matches();
     let threads = matches.value_of("threads").unwrap_or("8").parse::<u32>().unwrap(); //TODO is this the best way?
-    let io_flag = matches.is_present("no_io");
+    let io_flag = !matches.is_present("no_io");
 
     if !Path::new("./out").is_dir() {
         fs::create_dir("./out").expect("Couldn't create ./out");
