@@ -103,10 +103,10 @@ def main():
             print_stats(category, times)
 
     #compute total times
-    net_time = (last_net_time - first_net_time)/1000000
+    net_time = (last_net_time - first_net_time)/10000000
     print("Total time fetching resources: %f ms (%f s)"%(net_time, net_time/1000))
     print("Total resources fetched: %d"%len(time_profiles["NetHTTPRequestResponse"]))
-    total_time = (last_time - first_time)/1000000
+    total_time = (last_time - first_time)/10000000
     print("Total time: %f ms (%f s)"%(total_time, total_time/1000))
 
 
