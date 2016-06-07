@@ -43,7 +43,7 @@ def print_net_stats(category, times, urls):
             %(category, total, mean, median, stdev, minimum, min_url, maximum, max_url))
 
 
-
+#TODO need to normalize times
 def main():
     if len(sys.argv) < 2:
         print("Please provide html file")
@@ -70,18 +70,18 @@ def main():
         if not category in time_profiles:
             time_profiles[category] = []
   
-        start = int(ele["startTime"])
-        end = int(ele["endTime"])
-        time = (end - start)/1000000        #in ms
+        start = int(ele["startTime"])/1000000
+        end = int(ele["endTime"])/1000000
+        time = (end - start)        #in ms
 
-        if start < first_time and start > 0:
+        if start < first_time:
             first_time = start
         if end > last_time:
             last_time = end
 
         #FIXME doesn't account for breaks when we aren't doing any net
         if category=="NetHTTPRequestResponse":          
-            if start < first_net_time and start > 0:
+            if start < first_net_time :
                 first_net_time = start
             if end > last_net_time:
                 last_net_time = end
@@ -102,11 +102,11 @@ def main():
         else:
             print_stats(category, times)
 
-    #compute total times
-    net_time = (last_net_time - first_net_time)/10000000
+    #FIXME compute total times isn't right
+    net_time = (last_net_time - first_net_time)
     print("Total time fetching resources: %f ms (%f s)"%(net_time, net_time/1000))
     print("Total resources fetched: %d"%len(time_profiles["NetHTTPRequestResponse"]))
-    total_time = (last_time - first_time)/10000000
+    total_time = (last_time - first_time)
     print("Total time: %f ms (%f s)"%(total_time, total_time/1000))
 
 
